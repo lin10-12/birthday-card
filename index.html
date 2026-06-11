@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="一份温柔的生日电子贺卡">
+  <meta name="theme-color" content="#ffd6df">
+  <title>Happy Birthday · 生日惊喜</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== 可替换：背景音乐路径 ========== -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="assets/music.mp3" type="audio/mpeg">
+    <source src="assets/music.wav" type="audio/wav">
+  </audio>
+
+  <!-- 音乐开关按钮 -->
+  <button id="musicToggle" class="music-toggle" aria-label="播放或暂停背景音乐" title="音乐">
+    <span class="music-icon">♫</span>
+  </button>
+  <p id="musicToast" class="music-toast" hidden aria-live="polite"></p>
+
+  <!-- 多层背景：底层渐变 + 中层光斑 + 上层星点金粉 -->
+  <div class="bg-base" aria-hidden="true"></div>
+  <div class="bg-bokeh" aria-hidden="true">
+    <span class="bokeh bokeh--1"></span>
+    <span class="bokeh bokeh--2"></span>
+    <span class="bokeh bokeh--3"></span>
+    <span class="bokeh bokeh--4"></span>
+    <span class="bokeh bokeh--5"></span>
+  </div>
+  <div class="starfield" id="starfield" aria-hidden="true"></div>
+  <div class="floating-particles" id="floatingParticles" aria-hidden="true"></div>
+
+  <!-- 烟花画布 -->
+  <canvas id="fireworksCanvas" class="fireworks-canvas" aria-hidden="true"></canvas>
+
+  <main class="page">
+
+    <!-- ==================== 一、封面区域 ==================== -->
+    <!-- 可替换：收件人称呼（副标题上方标题的第二行） -->
+    <section id="cover" class="section cover">
+      <div class="section-fade section-fade--bottom"></div>
+
+      <div class="cover-card-wrap">
+        <div class="cover-halo" aria-hidden="true"></div>
+        <div class="cover-content glass-card cover-invite">
+          <div class="cover-shine" aria-hidden="true"></div>
+          <div class="cover-ribbon" aria-hidden="true"></div>
+          <p class="cover-eyebrow">✦ a special day for you ✦</p>
+          <h1 class="cover-title">
+            <span class="glow-text">Happy Birthday</span>
+            <span class="glow-text glow-text--accent">To Dear You</span>
+          </h1>
+          <p class="cover-subtitle">今天是属于你的特别日子</p>
+          <button id="openBtn" class="btn btn-primary">
+            <span>点击开启生日惊喜 🎁</span>
+          </button>
+          <p class="cover-tap-hint">轻点屏幕任意处，会有小小烟花 🎆</p>
+        </div>
+      </div>
+
+      <div class="scroll-hint" aria-hidden="true">
+        <span class="scroll-hint__dot"></span>
+      </div>
+    </section>
+
+    <!-- ==================== 二、回忆相册区域 ==================== -->
+    <section id="gallery" class="section gallery">
+      <div class="section-fade section-fade--top"></div>
+      <h2 class="section-title glow-text-sm">一些值得珍藏的瞬间</h2>
+
+      <div class="photo-list">
+        <!-- 可替换：照片路径与文案 -->
+        <!-- 替换照片后请把 ?v= 后面的数字改大（如 v=2），避免浏览器显示旧缓存 -->
+        <article class="photo-card reveal" data-index="0">
+          <div class="photo-frame">
+            <img src="assets/photo1.jpg?v=2" alt="珍藏瞬间 1" loading="lazy">
+            <div class="photo-placeholder">
+              <span class="placeholder-deco">✦</span>
+              <span class="placeholder-icon">🖼</span>
+              <span class="placeholder-text">请替换照片</span>
+            </div>
+          </div>
+          <p class="photo-caption"><span>这一刻，值得被记住。</span></p>
+        </article>
+
+        <article class="photo-card reveal" data-index="1">
+          <div class="photo-frame">
+            <img src="assets/photo2.jpg?v=2" alt="珍藏瞬间 2" loading="lazy">
+            <div class="photo-placeholder">
+              <span class="placeholder-deco">✦</span>
+              <span class="placeholder-icon">🖼</span>
+              <span class="placeholder-text">请替换照片</span>
+            </div>
+          </div>
+          <p class="photo-caption"><span>愿普通的日子，也能闪闪发光。</span></p>
+        </article>
+
+        <article class="photo-card reveal" data-index="2">
+          <div class="photo-frame">
+            <img src="assets/photo3.jpg?v=2" alt="珍藏瞬间 3" loading="lazy">
+            <div class="photo-placeholder">
+              <span class="placeholder-deco">✦</span>
+              <span class="placeholder-icon">🖼</span>
+              <span class="placeholder-text">请替换照片</span>
+            </div>
+          </div>
+          <p class="photo-caption"><span>有些瞬间，本身就是礼物。</span></p>
+        </article>
+
+        <article class="photo-card reveal" data-index="3">
+          <div class="photo-frame">
+            <img src="assets/photo4.jpg?v=2" alt="珍藏瞬间 4" loading="lazy">
+            <div class="photo-placeholder">
+              <span class="placeholder-deco">✦</span>
+              <span class="placeholder-icon">🖼</span>
+              <span class="placeholder-text">请替换照片</span>
+            </div>
+          </div>
+          <p class="photo-caption"><span>希望以后的每一年，都有更多美好发生。</span></p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ==================== 三、祝福文字区域 ==================== -->
+    <section id="letter" class="section letter">
+      <div class="section-fade section-fade--top"></div>
+      <h2 class="section-title glow-text-sm">我想对你说</h2>
+
+      <div class="letter-card letter-paper reveal">
+        <div class="letter-texture" aria-hidden="true"></div>
+        <div class="letter-stamp" aria-hidden="true">💌</div>
+        <!-- 可替换：祝福正文（打字机效果） -->
+        <div id="typewriter" class="typewriter" aria-live="polite">
+          <span id="typewriterText"></span><span id="typewriterCursor" class="typewriter-cursor"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 四、惊喜互动区域 ==================== -->
+    <section id="surprise" class="section surprise">
+      <div class="section-fade section-fade--top"></div>
+      <h2 class="section-title glow-text-sm">这里有一份小小的生日礼物</h2>
+
+      <div class="gift-area reveal">
+        <div class="gift-box-wrap">
+          <span class="gift-box-glow" aria-hidden="true"></span>
+          <button id="giftBox" class="gift-box" aria-label="打开生日礼物">
+            <span class="gift-box__emoji">🎁</span>
+            <span class="gift-box__shine"></span>
+          </button>
+        </div>
+        <p class="gift-hint">点一下，收下今日份好运</p>
+      </div>
+    </section>
+
+    <!-- ==================== 五、结尾区域 ==================== -->
+    <section id="ending" class="section ending">
+      <div class="section-fade section-fade--top"></div>
+      <div class="ending-sparkle" aria-hidden="true">✨</div>
+      <div class="ending-stars" aria-hidden="true">
+        <span>✦</span><span>✧</span><span>✦</span>
+      </div>
+
+      <div class="ending-content glass-card">
+        <h2 class="ending-title">
+          <span class="glow-text">Happy Birthday</span>
+        </h2>
+        <p class="ending-wish">愿你一直闪闪发光</p>
+        <button id="replayBtn" class="btn btn-secondary">
+          <span>再看一遍</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 祝福弹窗 -->
+  <div id="modalOverlay" class="modal-overlay" hidden>
+    <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <!-- 可替换：弹窗祝福内容 -->
+      <div class="modal-sparkle" aria-hidden="true">🎂</div>
+      <h3 id="modalTitle" class="modal-title">生日快乐！🎂</h3>
+      <p class="modal-body">
+        你的新一岁好运已经送达。<br><br>
+        愿你眼里有光，心里有梦，<br>
+        身边有爱，脚下有路。
+      </p>
+      <button id="modalCloseBtn" class="btn btn-primary modal-btn">
+        <span>收下祝福 ✨</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
