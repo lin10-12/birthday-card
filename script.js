@@ -189,17 +189,55 @@ function markMusicUnavailable(message) {
   console.info('[生日贺卡]', message);
 }
 
+/** 等待音频可播放（手机端大文件需用户点击后才开始加载） */
+function waitForMusicCanPlay(timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    if (bgMusic.readyState >= 2 && !bgMusic.error) {
+      resolve();
+      return;
+    }
+    if (bgMusic.error) {
+      reject(new Error('music load error'));
+      return;
+    }
+
+    let settled = false;
+    const done = (fn) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      bgMusic.removeEventListener('canplay', onCanPlay);
+      bgMusic.removeEventListener('loadeddata', onCanPlay);
+      bgMusic.removeEventListener('error', onError);
+      fn();
+    };
+
+    const onCanPlay = () => done(resolve);
+    const onError = () => done(() => reject(new Error('music load error')));
+    const timer = setTimeout(() => done(() => reject(new Error('music load timeout'))), timeoutMs);
+
+    bgMusic.addEventListener('canplay', onCanPlay);
+    bgMusic.addEventListener('loadeddata', onCanPlay);
+    bgMusic.addEventListener('error', onError);
+    bgMusic.load();
+  });
+}
+
 async function playMusic() {
   if (!bgMusic) return false;
-  if (!isMusicReady) {
-    showMusicToast('音乐文件未加载，请确认 assets/music.mp3 已放入项目');
-    return false;
-  }
   if (musicToggle) musicToggle.classList.add('loading');
+
   try {
     bgMusic.volume = 0.85;
+
+    // 不在此处拦截 isMusicReady：手机端 14MB 音乐预载慢，点击时应主动加载并播放
+    if (bgMusic.readyState < 2) {
+      await waitForMusicCanPlay();
+    }
+
     await bgMusic.play();
     isMusicPlaying = true;
+    isMusicReady = true;
     if (musicToggle) musicToggle.classList.remove('loading');
     updateMusicIcon();
     return true;
@@ -207,7 +245,15 @@ async function playMusic() {
     if (musicToggle) musicToggle.classList.remove('loading');
     isMusicPlaying = false;
     updateMusicIcon();
-    showMusicToast('音乐暂时无法播放，请再点一次或检查手机是否静音');
+
+    if (bgMusic.error || err.message === 'music load error') {
+      showMusicToast('音乐文件加载失败，请检查网络后重试');
+      console.info('[生日贺卡] 音乐文件错误码：', bgMusic.error?.code);
+    } else if (err.message === 'music load timeout') {
+      showMusicToast('音乐文件较大，加载较慢，请稍后再点一次');
+    } else {
+      showMusicToast('音乐暂时无法播放，请再点一次或检查手机是否静音');
+    }
     console.info('[生日贺卡] 音乐播放失败：', err.message);
     return false;
   }
@@ -227,13 +273,20 @@ function toggleMusic() {
 function initMusic() {
   if (!bgMusic || !musicToggle) return;
   musicToggle.addEventListener('click', toggleMusic);
-  const onReady = () => { if (bgMusic.readyState >= 2) markMusicReady(); };
+
+  const onReady = () => {
+    if (bgMusic.readyState >= 2) markMusicReady();
+  };
+
   bgMusic.addEventListener('loadeddata', onReady);
   bgMusic.addEventListener('canplay', onReady);
   bgMusic.addEventListener('error', () => {
     markMusicUnavailable('音乐文件加载失败');
-    showMusicToast('未找到音乐文件，请替换 assets/music.mp3');
+    // 仅控制台提示，避免一进页面就弹窗吓到用户
+    console.info('[生日贺卡] 音乐文件加载失败，请确认 assets/music.mp3 已部署');
   });
+
+  // 预载元数据即可，完整音频在用户点击时再加载（更适合手机端）
   bgMusic.load();
   if (bgMusic.readyState >= 2) markMusicReady();
   else updateMusicIcon();
