@@ -47,10 +47,11 @@
             <span class="glow-text glow-text--accent">To Dear Percy</span>
           </h1>
           <p class="cover-subtitle">今天是属于你的特别日子</p>
+          <p id="coverDedication" class="cover-dedication"></p>
           <button id="openBtn" class="btn btn-primary">
             <span>点击开启生日惊喜 🎁</span>
           </button>
-          <p class="cover-tap-hint">轻点屏幕任意处，会有小小烟花 🎆</p>
+          <p class="cover-tap-hint">轻点屏幕任意处，会有小小烟花🎆</p>
         </div>
       </div>
     </section>
@@ -80,7 +81,7 @@
 
             <!-- 第 1 页：照片 -->
             <section class="step-panel step-panel--active" data-step="0" id="stepGallery">
-              <h2 class="section-title glow-text-sm">一些值得珍藏的瞬间</h2>
+              <h2 class="section-title glow-text-sm">一些值得珍藏的瞬间（其实所有瞬间都值得珍藏😄）</h2>
               <div class="photo-grid">
                 <!-- 可替换：照片路径与文案；换图后请增大 ?v= 数字 -->
                 <article class="photo-card" data-index="0">
@@ -91,7 +92,7 @@
                       <span class="placeholder-text">请替换照片</span>
                     </div>
                   </div>
-                  <p class="photo-caption"><span>这一刻，值得被记住。</span></p>
+                  <p class="photo-caption"><span>为酷酷的自己放一把烟花。</span></p>
                 </article>
                 <article class="photo-card" data-index="1">
                   <div class="photo-frame">
@@ -101,7 +102,7 @@
                       <span class="placeholder-text">请替换照片</span>
                     </div>
                   </div>
-                  <p class="photo-caption"><span>愿普通的日子，也能闪闪发光。</span></p>
+                  <p class="photo-caption"><span>圣诞🎄？No，生日！🎂</span></p>
                 </article>
                 <article class="photo-card" data-index="2">
                   <div class="photo-frame">
@@ -111,7 +112,7 @@
                       <span class="placeholder-text">请替换照片</span>
                     </div>
                   </div>
-                  <p class="photo-caption"><span>有些瞬间，本身就是礼物。</span></p>
+                  <p class="photo-caption"><span>太好看了，忍不住多放一张。☺️</span></p>
                 </article>
                 <article class="photo-card" data-index="3">
                   <div class="photo-frame">
@@ -121,21 +122,39 @@
                       <span class="placeholder-text">请替换照片</span>
                     </div>
                   </div>
-                  <p class="photo-caption"><span>希望以后的每一年，都有更多美好发生。</span></p>
+                  <p class="photo-caption"><span>以后的每一年，都记得拍新的合照哦！😊(*^▽^*)</span></p>
                 </article>
               </div>
             </section>
 
-            <!-- 第 2 页：祝福信 -->
-            <section class="step-panel" data-step="1" id="stepLetter">
+            <!-- 第 2 页：祝福信（含上下两段） -->
+            <section class="step-panel step-panel--letter" data-step="1" id="stepLetter">
               <h2 class="section-title glow-text-sm">我想对你说</h2>
-              <div class="letter-card letter-paper">
-                <div class="letter-texture" aria-hidden="true"></div>
-                <div class="letter-stamp" aria-hidden="true">💌</div>
-                <div id="typewriter" class="typewriter" aria-live="polite">
-                  <span id="typewriterText"></span><span id="typewriterCursor" class="typewriter-cursor"></span>
+              <div class="letter-pages">
+                <div class="letter-subpage letter-subpage--active" data-letter-page="0">
+                  <div class="letter-card letter-paper">
+                    <div class="letter-texture" aria-hidden="true"></div>
+                    <div class="letter-stamp" aria-hidden="true">💌</div>
+                    <div class="typewriter" aria-live="polite">
+                      <span id="typewriterText0"></span><span id="typewriterCursor0" class="typewriter-cursor"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="letter-subpage" data-letter-page="1">
+                  <div class="letter-card letter-paper">
+                    <div class="letter-texture" aria-hidden="true"></div>
+                    <div class="letter-stamp" aria-hidden="true">💌</div>
+                    <div class="typewriter" aria-live="polite">
+                      <span id="typewriterText1"></span><span id="typewriterCursor1" class="typewriter-cursor"></span>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <nav class="letter-subnav" aria-label="祝福信分页">
+                <button id="letterSubPrev" class="btn btn-letter-sub" type="button" disabled>上一段</button>
+                <span class="letter-subnav-indicator" id="letterPageIndicator">1 / 2</span>
+                <button id="letterSubNext" class="btn btn-letter-sub" type="button">下一段</button>
+              </nav>
             </section>
 
             <!-- 第 3 页：礼物 -->
@@ -164,6 +183,8 @@
                   <span class="glow-text">Happy Birthday</span>
                 </h2>
                 <p class="ending-wish">愿你一直闪闪发光</p>
+                <p id="endingDedication" class="ending-dedication"></p>
+                <p id="endingSignature" class="ending-signature"></p>
                 <button id="replayBtn" class="btn btn-secondary">
                   <span>再看一遍</span>
                 </button>
@@ -184,23 +205,61 @@
   <!-- 祝福弹窗（点击礼物盒后显示小猫举蛋糕图） -->
   <div id="modalOverlay" class="modal-overlay" hidden>
     <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-gift-image-wrap">
-        <span class="modal-gift-glow" aria-hidden="true"></span>
-        <!-- 图片由 script.js CONFIG.giftImages 动态生成；支持 .gif / .jpg -->
-        <div id="giftModalGallery" class="modal-gift-orbit" role="list" aria-label="小九举蛋糕照片"></div>
-        <p class="modal-gift-hint">单击置顶 · 双击看大图</p>
-        <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
-          <span class="modal-gift-placeholder__emoji">🐱🎂</span>
-          <span class="modal-gift-placeholder__text">请将图片放入 assets/gift-cat1.jpg ~ gift-cat5.jpg</span>
+      <button id="modalDismissBtn" class="modal-dismiss" type="button" aria-label="关闭弹窗">×</button>
+
+      <!-- 阶段一：祝福与小猫照片 -->
+      <div id="modalPhaseBlessing" class="modal-phase">
+        <div class="modal-gift-image-wrap">
+          <span class="modal-gift-glow" aria-hidden="true"></span>
+          <div id="giftModalGallery" class="modal-gift-orbit" role="list" aria-label="小九举蛋糕照片"></div>
+          <p class="modal-gift-hint">单击置顶 · 双击看大图</p>
+          <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
+            <span class="modal-gift-placeholder__emoji">🐱🎂</span>
+            <span class="modal-gift-placeholder__text">🐱🐱🐱🐱🐱🐱🐱🐱🐱🐱</span>
+          </div>
+        </div>
+        <h3 id="modalTitle" class="modal-title">生日快乐！🎂</h3>
+        <p class="modal-body">
+          你的新一个18岁祝福已送达！<br><br>
+          小九送祝福咯🐱
+        </p>
+        <div class="modal-actions">
+          <button id="modalCloseBtn" class="btn btn-primary modal-btn" type="button">
+            <span>收下祝福 ✨</span>
+          </button>
+          <button id="modalNextGiftBtn" class="btn btn-secondary modal-btn modal-btn--secondary" type="button">
+            <span>开启下一份礼物</span>
+          </button>
         </div>
       </div>
-      <h3 id="modalTitle" class="modal-title">生日快乐！🎂</h3>
-      <p class="modal-body">
-        你的新一个18岁祝福已送达！<br><br>
-        小九送祝福咯🐱
-      </p>
-      <button id="modalCloseBtn" class="btn btn-primary modal-btn">
-        <span>收下祝福 ✨</span>
+
+      <!-- 阶段二：礼物转盘 -->
+      <div id="modalPhaseWheel" class="modal-phase modal-phase--wheel" hidden>
+        <p class="wheel-prompt">猜猜你的礼物是什么</p>
+        <div class="wheel-stage">
+          <div class="wheel-pointer" aria-hidden="true"></div>
+          <div id="giftWheel" class="wheel" aria-label="礼物转盘">
+            <ul id="wheelLabels" class="wheel-labels"></ul>
+          </div>
+          <div class="wheel-center-cap" aria-hidden="true">✦</div>
+        </div>
+        <button id="wheelSpinBtn" class="btn btn-primary modal-btn" type="button">
+          <span>点击旋转</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 转盘奖品揭晓弹窗（转完后显示耳机） -->
+  <div id="wheelPrizeOverlay" class="wheel-prize-overlay" hidden aria-hidden="true">
+    <div class="wheel-prize-dialog glass-card" role="dialog" aria-modal="true" aria-labelledby="wheelPrizeTitle">
+      <button id="wheelPrizeDismissBtn" class="wheel-prize-dismiss" type="button" aria-label="关闭">×</button>
+      <p id="wheelPrizeIcon" class="wheel-prize-icon" aria-hidden="true">🎧</p>
+      <h4 id="wheelPrizeTitle" class="wheel-prize-title">恭喜猜中！</h4>
+      <p id="wheelPrizeText" class="wheel-prize-text">你的礼物是耳机</p>
+      <button id="wheelPrizeCloseBtn" class="btn btn-primary modal-btn" type="button">
+        <span>收下礼物 ✨</span>
       </button>
     </div>
   </div>

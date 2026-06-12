@@ -1,18 +1,18 @@
 /**
  * 生日电子贺卡 · 交互脚本
  * =============================================
- * 【可替换内容】CONFIG.blessingText
+ * 【可替换内容】CONFIG.blessingTextPages（祝福信多页正文）
  * 【烟花参数】下方 FIREWORK_* 常量，集中调整颜色/数量/速度/大小/持续时间
  * 【全局点击烟花】initGlobalFireworks() + burstFirework(x, y)
  */
 
 /* ========== 可替换配置区域 ========== */
 const CONFIG = {
-  blessingText:
-    '今天是一个特别的日子，因为这个世界又多了一个值得被祝福的你。\n\n' +
-    '愿你新的18岁，有热爱，有自由，有坚定向前的勇气。\n\n' +
-    '愿你所想皆如愿，所行皆坦途，还是最希望你开心。\n\n' +
-    '生日快乐，恭喜你又到了新的18岁哦！',
+  /** 祝福信正文（多页）：在「我想对你说」内分页显示，每页独立打字机 */
+  blessingTextPages: [
+    '今天是一个特别的日子，因为这个世界又多了一个值得被祝福的你。愿你新的18岁，有热爱，有自由，有坚定向前的勇气。',
+    '“感谢Percy和小九，我的力量源泉。得益于Percy的幽默风趣与冷静稳重，虽然有一点奇怪，但这两者完全有人可以兼具；不善言辞的我，竟然也想着变成一个有趣的人；小九同学，毛茸茸的小家伙总是能治愈人心，于是每一天，她总能疗愈我；于是每一次感慨，总有一句如此幸运，生命的色彩因他们更明亮、更鲜活。”\n\n这是我写在致谢里的话，我们都知道，小九对于我们的重要性，我觉得你也把她作为了礼物🎁送给你自己；所以你要记得，我和小九一直在你身后，希望你可以勇敢地、坚韧地、一如既往地以及最快乐地，成为你自己。生日快乐，不止生日，最大的愿望是你每天都开心。✨💫✨💫✨',
+  ],
   /** 礼物弹窗图片（可多张）：支持 .gif 动图 或 .jpg/.png；换图后请增大 ?v= */
   giftImages: [
     'assets/gift-cat1.jpg?v=2',
@@ -24,6 +24,16 @@ const CONFIG = {
   /** 礼物环绕轨道半径（px）与单张尺寸（px） */
   giftOrbitRadius: 96,
   giftItemSize: 74,
+  /** 专属署名：封面与结尾展示 */
+  signatureDedication: '给小九的爸爸 Percy',
+  signatureFrom: '林不闻', // 可替换：你的署名
+  signatureYear: 2026,
+  /** 礼物转盘：wheelWinIndex 为停留格（0 起）；转盘上不显示耳机，揭晓见弹窗 */
+  wheelPrizes: ['?', '🎁', '🐱', '✨', '🍰', '🎵', '💌', '🌸'],
+  wheelWinIndex: 0,
+  wheelRevealIcon: '🎧',
+  wheelRevealTitle: '恭喜猜中！',
+  wheelRevealText: '恭喜你猜对咯！你的礼物是耳机',
   typewriterSpeed: 60,
   starCount: 50,
   particleCount: 12,
@@ -74,16 +84,31 @@ const stepPanels = document.querySelectorAll('.step-panel');
 const stepDots = document.querySelectorAll('.step-dot');
 const stepPrev = document.getElementById('stepPrev');
 const stepNext = document.getElementById('stepNext');
+const letterSubPrev = document.getElementById('letterSubPrev');
+const letterSubNext = document.getElementById('letterSubNext');
+const letterPageIndicator = document.getElementById('letterPageIndicator');
+const letterSubpages = document.querySelectorAll('.letter-subpage');
 const giftBox = document.getElementById('giftBox');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalDismissBtn = document.getElementById('modalDismissBtn');
+const modalNextGiftBtn = document.getElementById('modalNextGiftBtn');
+const modalPhaseBlessing = document.getElementById('modalPhaseBlessing');
+const modalPhaseWheel = document.getElementById('modalPhaseWheel');
+const giftWheel = document.getElementById('giftWheel');
+const wheelSpinBtn = document.getElementById('wheelSpinBtn');
+const wheelLabels = document.getElementById('wheelLabels');
+const wheelPrizeOverlay = document.getElementById('wheelPrizeOverlay');
+const wheelPrizeIcon = document.getElementById('wheelPrizeIcon');
+const wheelPrizeTitle = document.getElementById('wheelPrizeTitle');
+const wheelPrizeText = document.getElementById('wheelPrizeText');
+const wheelPrizeCloseBtn = document.getElementById('wheelPrizeCloseBtn');
+const wheelPrizeDismissBtn = document.getElementById('wheelPrizeDismissBtn');
 const giftModalGallery = document.getElementById('giftModalGallery');
 const giftModalPlaceholder = document.getElementById('giftModalPlaceholder');
 const giftLightbox = document.getElementById('giftLightbox');
 const giftLightboxImage = document.getElementById('giftLightboxImage');
 const giftLightboxClose = document.getElementById('giftLightboxClose');
-const typewriterText = document.getElementById('typewriterText');
-const typewriterCursor = document.getElementById('typewriterCursor');
 const starfield = document.getElementById('starfield');
 const floatingParticles = document.getElementById('floatingParticles');
 const fireworksCanvas = document.getElementById('fireworksCanvas');
@@ -92,11 +117,15 @@ const fireworksCanvas = document.getElementById('fireworksCanvas');
 let isMusicPlaying = false;
 let isMusicReady = false;
 let musicToastTimer = null;
-let typewriterStarted = false;
-let typewriterTimer = null;
+let typewriterStartedPages = [];
+let typewriterTimers = [];
+let currentLetterPage = 0;
 let currentStep = 0;
 const TOTAL_STEPS = 4;
+const LETTER_PAGE_COUNT = () => CONFIG.blessingTextPages?.length || 0;
 let focusedGiftIndex = -1;
+let wheelSpinning = false;
+let wheelCurrentRotation = 0;
 let fireworksAnimating = false;
 let sparks = [];
 let flashes = [];
@@ -336,6 +365,7 @@ function openEnvelope() {
   });
 
   document.querySelectorAll('.photo-card').forEach((c) => c.classList.remove('visible'));
+  resetLetterPages();
   currentStep = 0;
   goToStep(0, false);
   playMusic();
@@ -370,12 +400,73 @@ function goToStep(index, animate) {
     dot.classList.toggle('active', i === currentStep);
   });
 
-  if (stepPrev) stepPrev.disabled = currentStep === 0;
-  if (stepNext) {
-    stepNext.textContent = currentStep === TOTAL_STEPS - 1 ? '完成 ✨' : '下一页';
-  }
-
+  updateStepNavButtons();
   onStepEnter(currentStep);
+}
+
+function updateStepNavButtons() {
+  if (stepPrev) {
+    stepPrev.disabled = currentStep === 0;
+  }
+  if (stepNext) {
+    if (currentStep === TOTAL_STEPS - 1) {
+      stepNext.textContent = '完成 ✨';
+    } else if (currentStep === 1 && currentLetterPage < LETTER_PAGE_COUNT() - 1) {
+      stepNext.textContent = '下一段';
+    } else {
+      stepNext.textContent = '下一页';
+    }
+  }
+  updateLetterSubnav();
+}
+
+function goToLetterPage(pageIndex) {
+  const total = LETTER_PAGE_COUNT();
+  if (!total) return;
+
+  currentLetterPage = Math.max(0, Math.min(total - 1, pageIndex));
+
+  letterSubpages.forEach((page, i) => {
+    page.classList.toggle('letter-subpage--active', i === currentLetterPage);
+  });
+
+  updateStepNavButtons();
+  onLetterPageEnter(currentLetterPage);
+}
+
+function onLetterPageEnter(pageIndex) {
+  if (!typewriterStartedPages[pageIndex]) {
+    typewriterStartedPages[pageIndex] = true;
+    startTypewriter(pageIndex);
+  }
+}
+
+function updateLetterSubnav() {
+  const total = LETTER_PAGE_COUNT();
+  if (letterPageIndicator) {
+    letterPageIndicator.textContent = total ? `${currentLetterPage + 1} / ${total}` : '';
+  }
+  if (letterSubPrev) letterSubPrev.disabled = currentLetterPage === 0;
+  if (letterSubNext) letterSubNext.disabled = currentLetterPage >= total - 1;
+}
+
+function resetLetterPages() {
+  typewriterTimers.forEach((timer) => clearTimeout(timer));
+  typewriterTimers = [];
+  typewriterStartedPages = [];
+  currentLetterPage = 0;
+
+  LETTER_PAGE_COUNT() && CONFIG.blessingTextPages.forEach((_, i) => {
+    const textEl = document.getElementById(`typewriterText${i}`);
+    const cursorEl = document.getElementById(`typewriterCursor${i}`);
+    if (textEl) textEl.textContent = '';
+    if (cursorEl) cursorEl.classList.remove('hidden');
+  });
+
+  letterSubpages.forEach((page, i) => {
+    page.classList.toggle('letter-subpage--active', i === 0);
+  });
+  updateLetterSubnav();
 }
 
 function onStepEnter(step) {
@@ -384,17 +475,13 @@ function onStepEnter(step) {
       setTimeout(() => card.classList.add('visible'), i * 80);
     });
   }
-  if (step === 1 && !typewriterStarted) {
-    typewriterStarted = true;
-    startTypewriter();
+  if (step === 1) {
+    goToLetterPage(currentLetterPage);
   }
 }
 
 function resetCardExperience() {
-  clearTimeout(typewriterTimer);
-  typewriterStarted = false;
-  if (typewriterText) typewriterText.textContent = '';
-  if (typewriterCursor) typewriterCursor.classList.remove('hidden');
+  resetLetterPages();
   document.querySelectorAll('.photo-card').forEach((c) => c.classList.remove('visible'));
   currentStep = 0;
 }
@@ -417,6 +504,10 @@ function initEnvelope() {
   if (stepPrev) {
     stepPrev.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (currentStep === 1 && currentLetterPage > 0) {
+        goToLetterPage(currentLetterPage - 1);
+        return;
+      }
       if (currentStep > 0) goToStep(currentStep - 1);
     });
   }
@@ -424,10 +515,30 @@ function initEnvelope() {
   if (stepNext) {
     stepNext.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (currentStep === 1 && currentLetterPage < LETTER_PAGE_COUNT() - 1) {
+        goToLetterPage(currentLetterPage + 1);
+        return;
+      }
       if (currentStep < TOTAL_STEPS - 1) {
         goToStep(currentStep + 1);
       } else {
         closeEnvelope();
+      }
+    });
+  }
+
+  if (letterSubPrev) {
+    letterSubPrev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentLetterPage > 0) goToLetterPage(currentLetterPage - 1);
+    });
+  }
+
+  if (letterSubNext) {
+    letterSubNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentLetterPage < LETTER_PAGE_COUNT() - 1) {
+        goToLetterPage(currentLetterPage + 1);
       }
     });
   }
@@ -439,6 +550,8 @@ function initEnvelope() {
       closeEnvelope();
     });
   }
+
+  resetLetterPages();
 }
 
 /* ============================================================
@@ -459,20 +572,25 @@ function initPhotoFallbacks() {
   });
 }
 
-function startTypewriter() {
-  const chars = [...CONFIG.blessingText];
+function startTypewriter(pageIndex) {
+  const text = CONFIG.blessingTextPages[pageIndex];
+  const textEl = document.getElementById(`typewriterText${pageIndex}`);
+  const cursorEl = document.getElementById(`typewriterCursor${pageIndex}`);
+  if (!text || !textEl || !cursorEl) return;
+
+  const chars = [...text];
   let index = 0;
-  typewriterText.textContent = '';
-  typewriterCursor.classList.remove('hidden');
+  textEl.textContent = '';
+  cursorEl.classList.remove('hidden');
 
   function typeNext() {
     if (index < chars.length) {
-      typewriterText.textContent += chars[index];
+      textEl.textContent += chars[index];
       index++;
       const delay = chars[index - 1] === '\n' ? CONFIG.typewriterSpeed * 3 : CONFIG.typewriterSpeed;
-      typewriterTimer = setTimeout(typeNext, delay);
+      typewriterTimers[pageIndex] = setTimeout(typeNext, delay);
     } else {
-      typewriterTimer = setTimeout(() => typewriterCursor.classList.add('hidden'), 2000);
+      typewriterTimers[pageIndex] = setTimeout(() => cursorEl.classList.add('hidden'), 2000);
     }
   }
   typeNext();
@@ -659,7 +777,33 @@ function initGiftModalImages() {
   restartGiftOrbitAnimation();
 }
 
+function resetModalPhases() {
+  if (modalPhaseBlessing) modalPhaseBlessing.hidden = false;
+  if (modalPhaseWheel) modalPhaseWheel.hidden = true;
+  closeWheelPrizeReveal();
+  if (wheelSpinBtn) {
+    wheelSpinBtn.hidden = false;
+    wheelSpinBtn.disabled = false;
+    const label = wheelSpinBtn.querySelector('span');
+    if (label) label.textContent = '点击旋转';
+  }
+  wheelSpinning = false;
+  wheelCurrentRotation = 0;
+  if (giftWheel) {
+    giftWheel.style.transition = 'none';
+    giftWheel.style.transform = 'rotate(0deg)';
+    void giftWheel.offsetWidth;
+    giftWheel.style.transition = '';
+  }
+}
+
+function showWheelPhase() {
+  if (modalPhaseBlessing) modalPhaseBlessing.hidden = true;
+  if (modalPhaseWheel) modalPhaseWheel.hidden = false;
+}
+
 function openModal() {
+  resetModalPhases();
   modalOverlay.removeAttribute('hidden');
   requestAnimationFrame(() => {
     modalOverlay.classList.add('active');
@@ -670,11 +814,141 @@ function openModal() {
 
 function closeModal() {
   closeGiftLightbox();
+  closeWheelPrizeReveal();
   modalOverlay.classList.remove('active');
   if (!document.body.classList.contains('envelope-open')) {
     document.body.style.overflow = '';
   }
-  setTimeout(() => modalOverlay.setAttribute('hidden', ''), 450);
+  setTimeout(() => {
+    modalOverlay.setAttribute('hidden', '');
+    resetModalPhases();
+  }, 450);
+}
+
+function buildGiftWheel() {
+  if (!giftWheel || !wheelLabels || wheelLabels.childElementCount > 0) return;
+
+  const segments = CONFIG.wheelPrizes || ['🎧'];
+  const total = segments.length;
+  giftWheel.style.setProperty('--wheel-segments', String(total));
+
+  const gradientStops = segments
+    .map((_, i) => {
+      const c = i % 2 === 0 ? '#fff8f2' : '#ffe8e0';
+      const start = (i * 360) / total;
+      const end = ((i + 1) * 360) / total;
+      return `${c} ${start}deg ${end}deg`;
+    })
+    .join(', ');
+  giftWheel.style.background = `conic-gradient(from ${-90 / total}deg, ${gradientStops})`;
+
+  segments.forEach((icon, i) => {
+    const li = document.createElement('li');
+    li.className = 'wheel-label';
+    li.textContent = icon;
+    li.style.setProperty('--seg-i', String(i));
+    wheelLabels.appendChild(li);
+  });
+}
+
+function getWheelStopRotation(currentRotation, winIndex, total) {
+  const segmentAngle = 360 / total;
+  const stopMod = ((360 - winIndex * segmentAngle) % 360 + 360) % 360;
+  const currentMod = ((currentRotation % 360) + 360) % 360;
+  let delta = (stopMod - currentMod + 360) % 360;
+  if (delta < 45) delta += 360;
+  const extraSpins = 4 + Math.floor(Math.random() * 3);
+  return currentRotation + extraSpins * 360 + delta;
+}
+
+function openWheelPrizeReveal() {
+  if (!wheelPrizeOverlay) return;
+  if (wheelPrizeIcon) wheelPrizeIcon.textContent = CONFIG.wheelRevealIcon || '🎧';
+  if (wheelPrizeTitle) wheelPrizeTitle.textContent = CONFIG.wheelRevealTitle || '恭喜猜中！';
+  if (wheelPrizeText) {
+    wheelPrizeText.textContent =
+      CONFIG.wheelRevealText || '恭喜你猜对咯！你的礼物是耳机';
+  }
+  wheelPrizeOverlay.removeAttribute('hidden');
+  wheelPrizeOverlay.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => wheelPrizeOverlay.classList.add('wheel-prize-overlay--active'));
+}
+
+function closeWheelPrizeReveal() {
+  if (!wheelPrizeOverlay) return;
+  wheelPrizeOverlay.classList.remove('wheel-prize-overlay--active');
+  wheelPrizeOverlay.setAttribute('aria-hidden', 'true');
+  setTimeout(() => wheelPrizeOverlay.setAttribute('hidden', ''), 320);
+}
+
+function spinGiftWheel() {
+  if (wheelSpinning || !giftWheel) return;
+  wheelSpinning = true;
+  if (wheelSpinBtn) {
+    wheelSpinBtn.disabled = true;
+    const label = wheelSpinBtn.querySelector('span');
+    if (label) label.textContent = '旋转中…';
+  }
+
+  const segments = CONFIG.wheelPrizes || ['🎧'];
+  const total = segments.length;
+  const winIndex = Math.min(CONFIG.wheelWinIndex ?? 0, total - 1);
+  const finalRotation = getWheelStopRotation(wheelCurrentRotation, winIndex, total);
+
+  giftWheel.style.transform = `rotate(${finalRotation}deg)`;
+  wheelCurrentRotation = finalRotation;
+
+  const rect = giftWheel.getBoundingClientRect();
+  setTimeout(() => launchFirework(rect.left + rect.width / 2, rect.top + rect.height / 2, true), 3200);
+
+  setTimeout(() => {
+    wheelSpinning = false;
+    openWheelPrizeReveal();
+    if (wheelSpinBtn) {
+      wheelSpinBtn.disabled = false;
+      wheelSpinBtn.hidden = false;
+      const label = wheelSpinBtn.querySelector('span');
+      if (label) label.textContent = '再转一次';
+    }
+  }, 4300);
+}
+
+function initGiftWheel() {
+  buildGiftWheel();
+
+  if (modalNextGiftBtn) {
+    modalNextGiftBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showWheelPhase();
+    });
+  }
+
+  if (wheelSpinBtn) {
+    wheelSpinBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      spinGiftWheel();
+    });
+  }
+
+  if (wheelPrizeCloseBtn) {
+    wheelPrizeCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeWheelPrizeReveal();
+    });
+  }
+
+  if (wheelPrizeDismissBtn) {
+    wheelPrizeDismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeWheelPrizeReveal();
+    });
+  }
+
+  if (wheelPrizeOverlay) {
+    wheelPrizeOverlay.addEventListener('click', (e) => {
+      if (e.target === wheelPrizeOverlay) closeWheelPrizeReveal();
+    });
+  }
 }
 
 if (giftBox) {
@@ -689,10 +963,25 @@ if (giftBox) {
   });
 }
 
-modalCloseBtn.addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) closeModal();
-});
+if (modalCloseBtn) {
+  modalCloseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeModal();
+  });
+}
+
+if (modalDismissBtn) {
+  modalDismissBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeModal();
+  });
+}
+
+if (modalOverlay) {
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+}
 
 /* ============================================================
    烟花系统（Canvas）
@@ -1004,14 +1293,36 @@ function initGlobalFireworks() {
 }
 
 /* ============================================================
+   专属署名
+   ============================================================ */
+function initSignatures() {
+  const coverDedication = document.getElementById('coverDedication');
+  const endingDedication = document.getElementById('endingDedication');
+  const endingSignature = document.getElementById('endingSignature');
+
+  if (coverDedication && CONFIG.signatureDedication) {
+    coverDedication.textContent = CONFIG.signatureDedication;
+  }
+  if (endingDedication && CONFIG.signatureDedication) {
+    endingDedication.textContent = CONFIG.signatureDedication;
+  }
+  if (endingSignature && CONFIG.signatureFrom) {
+    endingSignature.textContent =
+      `—— 来自 ${CONFIG.signatureFrom} · ${CONFIG.signatureYear}`;
+  }
+}
+
+/* ============================================================
    初始化
    ============================================================ */
 function init() {
+  initSignatures();
   initStars();
   initFloatingParticles();
   initPhotoFallbacks();
   initGiftModalImages();
   initGiftLightbox();
+  initGiftWheel();
   initEnvelope();
   initMusic();
   initGlobalFireworks();

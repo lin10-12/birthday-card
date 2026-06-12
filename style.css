@@ -548,8 +548,17 @@ body.envelope-open #coverPage .cover-invite {
 .cover-subtitle {
   font-size: 0.92rem;
   color: var(--text-muted);
-  margin-bottom: 1.75rem;
+  margin-bottom: 0.55rem;
   letter-spacing: 0.1em;
+}
+
+.cover-dedication {
+  font-size: 0.8rem;
+  color: var(--rose-gold);
+  letter-spacing: 0.14em;
+  margin-bottom: 1.45rem;
+  font-style: italic;
+  opacity: 0.92;
 }
 
 .cover-tap-hint {
@@ -869,12 +878,87 @@ body.envelope-open #coverPage .cover-invite {
 .photo-card[data-index="3"] .photo-caption span { transform: rotate(0.5deg); }
 
 /* ============================================================
-   三、祝福文字 · 电子信纸
+   三、祝福文字 · 电子信纸（含分页）
    ============================================================ */
+.step-panel--letter {
+  gap: 0.65rem;
+}
+
+.letter-pages {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.letter-subpage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(14px);
+  transition: opacity 0.38s var(--transition-smooth), transform 0.38s var(--transition-smooth), visibility 0.38s;
+}
+
+.letter-subpage--active {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.letter-subnav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.15rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(214, 154, 92, 0.16);
+}
+
+.btn-letter-sub {
+  flex: 1;
+  max-width: 108px;
+  padding: 0.5rem 0.35rem;
+  font-size: 0.76rem;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 154, 92, 0.35);
+  background: rgba(255, 252, 245, 0.72);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.btn-letter-sub:disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.btn-letter-sub:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.letter-subnav-indicator {
+  min-width: 3.2rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.letter-subpage .letter-paper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .letter-paper {
   position: relative;
   padding: clamp(1.25rem, 4vw, 1.75rem);
-  flex: 1;
   min-height: 0;
   max-height: 100%;
   background: linear-gradient(
@@ -926,7 +1010,9 @@ body.envelope-open #coverPage .cover-invite {
   z-index: 1;
   font-size: 0.88rem;
   line-height: 2;
-  max-height: 42dvh;
+  flex: 1;
+  min-height: 0;
+  max-height: 36dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   color: var(--text-muted);
@@ -1075,6 +1161,7 @@ body.envelope-open #coverPage .cover-invite {
 .modal-overlay:not([hidden]) { display: flex; }
 
 .modal {
+  position: relative;
   width: 100%;
   max-width: 380px;
   padding: 1.35rem 1.15rem 1.5rem;
@@ -1084,6 +1171,30 @@ body.envelope-open #coverPage .cover-invite {
   opacity: 0;
   overflow: visible;
   transition: transform 0.5s var(--transition-smooth), opacity 0.45s var(--transition-smooth);
+}
+
+.modal-dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 6;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--deep-rose);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.2s;
+}
+
+.modal-dismiss:active {
+  transform: scale(0.92);
 }
 
 .modal-overlay.active .modal {
@@ -1331,7 +1442,199 @@ body.envelope-open #coverPage .cover-invite {
   margin-bottom: 1.15rem;
 }
 
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
 .modal-btn { width: 100%; }
+
+.modal-btn--next {
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+}
+
+.modal-phase[hidden] {
+  display: none;
+}
+
+/* ---------- 礼物转盘 ---------- */
+.wheel-prompt {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--rose-gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.wheel-container,
+.wheel-stage {
+  position: relative;
+  width: min(72vw, 268px);
+  height: min(72vw, 268px);
+  margin: 0 auto 1rem;
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 20px solid var(--gold);
+  filter: drop-shadow(0 2px 4px rgba(214, 154, 92, 0.35));
+}
+
+.gift-wheel,
+.wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(214, 154, 92, 0.42);
+  box-shadow:
+    0 8px 28px rgba(201, 121, 116, 0.22),
+    inset 0 0 0 4px rgba(255, 252, 245, 0.65);
+  transition: transform 4.2s cubic-bezier(0.12, 0.82, 0.18, 1);
+  will-change: transform;
+}
+
+.wheel-labels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  inset: 0;
+}
+
+.wheel-label,
+.gift-wheel__icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: clamp(1.25rem, 4.5vw, 1.65rem);
+  line-height: 1;
+  transform:
+    rotate(calc(var(--seg-i) * (360deg / var(--wheel-segments, 8)) + (180deg / var(--wheel-segments, 8))))
+    translateY(calc(-1 * min(31vw, 112px)))
+    rotate(calc(-1 * (var(--seg-i) * (360deg / var(--wheel-segments, 8)) + (180deg / var(--wheel-segments, 8)))));
+  pointer-events: none;
+  user-select: none;
+}
+
+.wheel-center-cap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  border: 2px solid rgba(214, 154, 92, 0.45);
+  background: linear-gradient(145deg, #fffaf5, #ffe8dc);
+  color: var(--gold);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(201, 121, 116, 0.2);
+  pointer-events: none;
+}
+
+/* ---------- 转盘奖品揭晓弹窗 ---------- */
+.wheel-prize-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(40, 24, 28, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s var(--transition-smooth), visibility 0.35s;
+}
+
+.wheel-prize-overlay[hidden] { display: none; }
+.wheel-prize-overlay:not([hidden]) { display: flex; }
+
+.wheel-prize-overlay--active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wheel-prize-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  padding: 1.75rem 1.35rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(255, 252, 245, 0.96), rgba(255, 235, 225, 0.9));
+  transform: scale(0.9) translateY(12px);
+  opacity: 0;
+  transition: transform 0.45s var(--transition-smooth), opacity 0.4s;
+}
+
+.wheel-prize-dismiss {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 252, 245, 0.9);
+  color: var(--deep-rose);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.wheel-prize-dismiss:active {
+  transform: scale(0.92);
+}
+
+.wheel-prize-overlay--active .wheel-prize-dialog {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.wheel-prize-icon {
+  font-size: 3.25rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.wheel-prize-title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--rose-gold);
+  margin-bottom: 0.5rem;
+}
+
+.wheel-prize-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+  margin-bottom: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-wheel,
+  .wheel {
+    transition-duration: 0.01ms;
+  }
+}
 
 /* ============================================================
    五、结尾区域
@@ -1400,7 +1703,22 @@ body.envelope-open #coverPage .cover-invite {
   font-size: 0.95rem;
   color: var(--deep-rose);
   letter-spacing: 0.14em;
-  margin-bottom: 1.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.ending-dedication {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.45rem;
+  font-style: italic;
+}
+
+.ending-signature {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  letter-spacing: 0.12em;
+  margin-bottom: 1.35rem;
 }
 
 /* ---------- 滚动显现 ---------- */
