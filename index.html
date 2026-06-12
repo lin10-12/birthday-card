@@ -181,15 +181,30 @@
     </div>
   </div>
 
-  <!-- 祝福弹窗 -->
+  <!-- 祝福弹窗（点击礼物盒后显示小猫举蛋糕图） -->
   <div id="modalOverlay" class="modal-overlay" hidden>
     <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-sparkle" aria-hidden="true">🎂</div>
+      <div class="modal-gift-image-wrap">
+        <span class="modal-gift-glow" aria-hidden="true"></span>
+        <figure class="modal-gift-figure">
+          <!-- 可替换：assets/gift-cat.gif 动图 或 gift-cat.jpg 静态图；换图后增大 ?v= -->
+          <img
+            id="giftModalImage"
+            class="modal-gift-image"
+            src="assets/gift-cat.jpg?v=1"
+            alt="小九举着生日蛋糕"
+            loading="eager"
+          >
+          <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
+            <span class="modal-gift-placeholder__emoji">🐱🎂</span>
+            <span class="modal-gift-placeholder__text">请将图片放入 assets/gift-cat.jpg</span>
+          </div>
+        </figure>
+      </div>
       <h3 id="modalTitle" class="modal-title">生日快乐！🎂</h3>
       <p class="modal-body">
         你的新一个18岁祝福已送达！<br><br>
-        小九送祝福咯🐱<br>
-        🐱🐱🐱🐱🐱
+        小九送祝福咯🐱
       </p>
       <button id="modalCloseBtn" class="btn btn-primary modal-btn">
         <span>收下祝福 ✨</span>

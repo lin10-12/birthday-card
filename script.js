@@ -13,6 +13,8 @@ const CONFIG = {
     '愿你新的18岁，有热爱，有自由，有坚定向前的勇气。\n\n' +
     '愿你所想皆如愿，所行皆坦途，还是最希望你开心。\n\n' +
     '生日快乐，恭喜你又到了新的18岁哦！',
+  /** 礼物弹窗图片：支持 .gif 动图 或 .jpg/.png 静态图，换图后请增大 ?v= */
+  giftImage: 'assets/gift-cat.jpg?v=1',
   typewriterSpeed: 60,
   starCount: 50,
   particleCount: 12,
@@ -66,6 +68,8 @@ const stepNext = document.getElementById('stepNext');
 const giftBox = document.getElementById('giftBox');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
+const giftModalImage = document.getElementById('giftModalImage');
+const giftModalPlaceholder = document.getElementById('giftModalPlaceholder');
 const typewriterText = document.getElementById('typewriterText');
 const typewriterCursor = document.getElementById('typewriterCursor');
 const starfield = document.getElementById('starfield');
@@ -464,6 +468,31 @@ function startTypewriter() {
 /* ============================================================
    礼物盒与弹窗
    ============================================================ */
+function initGiftModalImage() {
+  if (!giftModalImage) return;
+
+  giftModalImage.src = CONFIG.giftImage;
+
+  const onLoad = () => {
+    giftModalImage.classList.add('loaded');
+    giftModalImage.classList.remove('error');
+    if (giftModalPlaceholder) giftModalPlaceholder.hidden = true;
+  };
+
+  const onError = () => {
+    giftModalImage.classList.add('error');
+    giftModalImage.classList.remove('loaded');
+    if (giftModalPlaceholder) giftModalPlaceholder.hidden = false;
+    console.info('[生日贺卡] 礼物图片加载失败，请检查：', CONFIG.giftImage);
+  };
+
+  giftModalImage.addEventListener('load', onLoad);
+  giftModalImage.addEventListener('error', onError);
+  if (giftModalImage.complete) {
+    giftModalImage.naturalWidth > 0 ? onLoad() : onError();
+  }
+}
+
 function openModal() {
   modalOverlay.removeAttribute('hidden');
   requestAnimationFrame(() => modalOverlay.classList.add('active'));
@@ -478,14 +507,17 @@ function closeModal() {
   setTimeout(() => modalOverlay.setAttribute('hidden', ''), 450);
 }
 
-giftBox.addEventListener('click', () => {
-  giftBox.classList.remove('bounce');
-  void giftBox.offsetWidth;
-  giftBox.classList.add('bounce');
-  const rect = giftBox.getBoundingClientRect();
-  launchFirework(rect.left + rect.width / 2, rect.top + rect.height / 2, true);
-  openModal();
-});
+if (giftBox) {
+  giftBox.addEventListener('click', (e) => {
+    e.stopPropagation();
+    giftBox.classList.remove('bounce');
+    void giftBox.offsetWidth;
+    giftBox.classList.add('bounce');
+    const rect = giftBox.getBoundingClientRect();
+    launchFirework(rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+    openModal();
+  });
+}
 
 modalCloseBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => {
@@ -808,6 +840,7 @@ function init() {
   initStars();
   initFloatingParticles();
   initPhotoFallbacks();
+  initGiftModalImage();
   initEnvelope();
   initMusic();
   initGlobalFireworks();
