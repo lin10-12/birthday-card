@@ -66,6 +66,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.envelope-open {
+  overflow: hidden;
+}
+
 /* ============================================================
    多层背景
    底层：奶油粉渐变 | 中层：光斑 | 上层：星点金粉（JS 生成）
@@ -205,7 +209,7 @@ body {
   position: fixed;
   top: max(1rem, env(safe-area-inset-top));
   right: max(1rem, env(safe-area-inset-right));
-  z-index: 100;
+  z-index: 260;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -236,7 +240,7 @@ body {
   top: max(4.25rem, calc(env(safe-area-inset-top) + 3.25rem));
   right: max(1rem, env(safe-area-inset-right));
   left: max(1rem, env(safe-area-inset-left));
-  z-index: 101;
+  z-index: 261;
   margin: 0 auto;
   max-width: 280px;
   padding: 0.55rem 0.85rem;
@@ -391,6 +395,17 @@ body {
 /* ============================================================
    一、封面 · 粉金发光邀请函
    ============================================================ */
+body.envelope-open #coverPage {
+  pointer-events: none;
+}
+
+body.envelope-open #coverPage .cover-invite {
+  transform: scale(0.96);
+  opacity: 0.35;
+  filter: blur(1px);
+  transition: transform 0.5s var(--transition-smooth), opacity 0.5s, filter 0.5s;
+}
+
 .cover {
   min-height: 100dvh;
   display: flex;
@@ -545,74 +560,229 @@ body {
   opacity: 0.65;
 }
 
-.scroll-hint {
+/* ============================================================
+   信封层 · 分步贺卡
+   ============================================================ */
+.envelope-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s var(--transition-smooth), visibility 0.45s;
+}
+
+.envelope-layer[hidden] { display: none; }
+.envelope-layer:not([hidden]) { display: flex; }
+
+.envelope-layer--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.envelope-backdrop {
   position: absolute;
-  bottom: 2rem;
+  inset: 0;
+  background: rgba(255, 225, 215, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.envelope-stage {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  z-index: 1;
+  transform: scale(0.88) translateY(24px);
+  opacity: 0;
+  transition: transform 0.55s var(--transition-smooth), opacity 0.45s;
+}
+
+.envelope-layer--open .envelope-stage {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.envelope-close {
+  position: absolute;
+  top: -0.25rem;
+  right: 0;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--deep-rose);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.envelope-close:active { transform: scale(0.92); }
+
+.envelope-shell {
+  position: relative;
+  padding-top: 1.25rem;
+}
+
+.envelope-flap {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%) rotateX(0deg);
+  width: 88%;
+  height: 52px;
+  background: linear-gradient(180deg, #e8b87a, #d9a0a0);
+  clip-path: polygon(0 0, 50% 100%, 100% 0);
+  border-radius: 4px 4px 0 0;
+  transform-origin: top center;
+  transition: transform 0.6s var(--transition-smooth);
+  z-index: 2;
+  opacity: 0.85;
+}
+
+.envelope-layer--open .envelope-flap {
+  transform: translateX(-50%) rotateX(180deg);
+  opacity: 0;
+}
+
+.envelope-pocket {
+  position: absolute;
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  opacity: 0.45;
+  width: 92%;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(201, 121, 116, 0.25), transparent);
+  border-radius: 0 0 8px 8px;
+  z-index: 1;
+  pointer-events: none;
 }
 
-.scroll-hint__dot {
-  display: block;
-  width: 5px;
-  height: 5px;
+.envelope-card {
+  position: relative;
+  z-index: 3;
+  margin-top: 0.5rem;
+  padding: 1.1rem 1rem 1rem;
+  max-height: min(78dvh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, rgba(255, 252, 245, 0.95), rgba(255, 236, 228, 0.88));
+}
+
+.step-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.step-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--gold);
-  animation: scrollBounce 2s ease-in-out infinite;
+  background: rgba(201, 121, 116, 0.25);
+  transition: transform 0.3s, background 0.3s;
 }
 
-@keyframes scrollBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.35; }
-  50% { transform: translateY(7px); opacity: 0.75; }
+.step-dot.active {
+  background: var(--gold);
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(241, 198, 122, 0.45);
+}
+
+.step-panels {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.step-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(18px);
+  transition: opacity 0.4s var(--transition-smooth), transform 0.4s var(--transition-smooth), visibility 0.4s;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.15rem;
+}
+
+.step-panel--active {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.step-panel .section-title {
+  margin-bottom: 1rem;
+  font-size: clamp(1.1rem, 4vw, 1.35rem);
+}
+
+.step-nav {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(214, 154, 92, 0.2);
+}
+
+.btn-step {
+  flex: 1;
+  padding: 0.72rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.btn-step:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(0.3);
 }
 
 /* ============================================================
-   二、回忆相册 · 错落便签
+   相册 · 一页四宫格
    ============================================================ */
-.gallery { position: relative; }
-
-.photo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2.25rem;
-  position: relative;
-  z-index: 1;
+.photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
 }
 
 .photo-card {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.85s var(--transition-smooth), transform 0.85s var(--transition-smooth);
+  transform: translateY(12px) scale(0.96);
+  transition: opacity 0.6s var(--transition-smooth), transform 0.6s var(--transition-smooth);
 }
 
 .photo-card.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-/* 轻微错落旋转 */
-.photo-card[data-index="0"] { transform: translateY(28px) rotate(-0.8deg); }
-.photo-card[data-index="1"] { transform: translateY(28px) rotate(0.6deg); }
-.photo-card[data-index="2"] { transform: translateY(28px) rotate(-0.5deg); }
-.photo-card[data-index="3"] { transform: translateY(28px) rotate(0.7deg); }
-
-.photo-card[data-index="0"].visible { transform: rotate(-0.8deg); }
-.photo-card[data-index="1"].visible { transform: rotate(0.6deg); }
-.photo-card[data-index="2"].visible { transform: rotate(-0.5deg); }
-.photo-card[data-index="3"].visible { transform: rotate(0.7deg); }
-
-.photo-card[data-index="1"] .photo-frame,
-.photo-card[data-index="3"] .photo-frame {
-  margin-left: 0.5rem;
-  margin-right: -0.5rem;
-}
+.photo-card[data-index="0"].visible { transform: rotate(-0.6deg); }
+.photo-card[data-index="1"].visible { transform: rotate(0.5deg); }
+.photo-card[data-index="2"].visible { transform: rotate(-0.4deg); }
+.photo-card[data-index="3"].visible { transform: rotate(0.5deg); }
 
 .photo-frame {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border: 1.5px solid rgba(214, 154, 92, 0.38);
   background: rgba(255, 248, 240, 0.55);
   box-shadow:
@@ -676,14 +846,14 @@ body {
 .photo-caption {
   display: flex;
   justify-content: center;
-  margin-top: 0.9rem;
+  margin-top: 0.45rem;
 }
 
 .photo-caption span {
   display: inline-block;
-  padding: 0.45rem 1rem;
+  padding: 0.28rem 0.5rem;
   font-family: var(--font-serif);
-  font-size: 0.86rem;
+  font-size: 0.68rem;
   font-style: italic;
   color: var(--deep-rose);
   letter-spacing: 0.04em;
@@ -703,8 +873,10 @@ body {
    ============================================================ */
 .letter-paper {
   position: relative;
-  padding: clamp(2rem, 5.5vw, 2.75rem);
-  min-height: 220px;
+  padding: clamp(1.25rem, 4vw, 1.75rem);
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
   background: linear-gradient(
     180deg,
     rgba(255, 250, 242, 0.9) 0%,
@@ -752,8 +924,11 @@ body {
 .typewriter {
   position: relative;
   z-index: 1;
-  font-size: 0.94rem;
-  line-height: 2.15;
+  font-size: 0.88rem;
+  line-height: 2;
+  max-height: 42dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   color: var(--text-muted);
   letter-spacing: 0.03em;
   white-space: pre-wrap;
@@ -782,9 +957,10 @@ body {
 /* ============================================================
    四、惊喜互动 · 呼吸光礼物盒
    ============================================================ */
-.surprise {
+.surprise,
+#stepSurprise {
   text-align: center;
-  position: relative;
+  justify-content: center;
 }
 
 .gift-area {
@@ -987,6 +1163,16 @@ body {
   margin: 0 auto;
   position: relative;
   z-index: 1;
+}
+
+.ending-content--inline {
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+#stepEnding {
+  justify-content: center;
+  text-align: center;
 }
 
 .ending-title {

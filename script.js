@@ -57,6 +57,12 @@ const musicIcon = musicToggle ? musicToggle.querySelector('.music-icon') : null;
 const musicToast = document.getElementById('musicToast');
 const openBtn = document.getElementById('openBtn');
 const replayBtn = document.getElementById('replayBtn');
+const envelopeLayer = document.getElementById('envelopeLayer');
+const envelopeClose = document.getElementById('envelopeClose');
+const stepPanels = document.querySelectorAll('.step-panel');
+const stepDots = document.querySelectorAll('.step-dot');
+const stepPrev = document.getElementById('stepPrev');
+const stepNext = document.getElementById('stepNext');
 const giftBox = document.getElementById('giftBox');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
@@ -71,6 +77,9 @@ let isMusicPlaying = false;
 let isMusicReady = false;
 let musicToastTimer = null;
 let typewriterStarted = false;
+let typewriterTimer = null;
+let currentStep = 0;
+const TOTAL_STEPS = 4;
 let fireworksAnimating = false;
 let sparks = [];
 let flashes = [];
@@ -293,19 +302,131 @@ function initMusic() {
 }
 
 /* ============================================================
-   平滑滚动 / 图片 / 动画 / 打字机
+   信封打开 / 分步浏览
+   【核心】openEnvelope() / closeEnvelope() / goToStep()
    ============================================================ */
-function smoothScrollTo(target) {
-  const el = typeof target === 'string' ? document.querySelector(target) : target;
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function openEnvelope() {
+  if (!envelopeLayer) return;
+
+  envelopeLayer.removeAttribute('hidden');
+  envelopeLayer.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('envelope-open');
+  document.body.style.overflow = 'hidden';
+
+  requestAnimationFrame(() => {
+    envelopeLayer.classList.add('envelope-layer--visible');
+    setTimeout(() => envelopeLayer.classList.add('envelope-layer--open'), 60);
+  });
+
+  document.querySelectorAll('.photo-card').forEach((c) => c.classList.remove('visible'));
+  currentStep = 0;
+  goToStep(0, false);
+  playMusic();
 }
 
-openBtn.addEventListener('click', () => {
-  smoothScrollTo('#gallery');
-  playMusic();
-});
+function closeEnvelope() {
+  if (!envelopeLayer) return;
 
-replayBtn.addEventListener('click', () => smoothScrollTo('#cover'));
+  envelopeLayer.classList.remove('envelope-layer--open');
+  setTimeout(() => {
+    envelopeLayer.classList.remove('envelope-layer--visible');
+    envelopeLayer.setAttribute('hidden', '');
+    envelopeLayer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('envelope-open');
+    if (!modalOverlay.classList.contains('active')) {
+      document.body.style.overflow = '';
+    }
+  }, 480);
+}
+
+function goToStep(index, animate) {
+  if (animate === undefined) animate = true;
+  currentStep = Math.max(0, Math.min(TOTAL_STEPS - 1, index));
+
+  stepPanels.forEach((panel, i) => {
+    const isActive = i === currentStep;
+    panel.classList.toggle('step-panel--active', isActive);
+    if (!isActive) panel.classList.remove('step-panel--active');
+  });
+
+  stepDots.forEach((dot, i) => {
+    dot.classList.toggle('active', i === currentStep);
+  });
+
+  if (stepPrev) stepPrev.disabled = currentStep === 0;
+  if (stepNext) {
+    stepNext.textContent = currentStep === TOTAL_STEPS - 1 ? '完成 ✨' : '下一页';
+  }
+
+  onStepEnter(currentStep);
+}
+
+function onStepEnter(step) {
+  if (step === 0) {
+    document.querySelectorAll('.photo-card').forEach((card, i) => {
+      setTimeout(() => card.classList.add('visible'), i * 80);
+    });
+  }
+  if (step === 1 && !typewriterStarted) {
+    typewriterStarted = true;
+    startTypewriter();
+  }
+}
+
+function resetCardExperience() {
+  clearTimeout(typewriterTimer);
+  typewriterStarted = false;
+  if (typewriterText) typewriterText.textContent = '';
+  if (typewriterCursor) typewriterCursor.classList.remove('hidden');
+  document.querySelectorAll('.photo-card').forEach((c) => c.classList.remove('visible'));
+  currentStep = 0;
+}
+
+function initEnvelope() {
+  if (openBtn) {
+    openBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEnvelope();
+    });
+  }
+
+  if (envelopeClose) {
+    envelopeClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeEnvelope();
+    });
+  }
+
+  if (stepPrev) {
+    stepPrev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentStep > 0) goToStep(currentStep - 1);
+    });
+  }
+
+  if (stepNext) {
+    stepNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentStep < TOTAL_STEPS - 1) {
+        goToStep(currentStep + 1);
+      } else {
+        closeEnvelope();
+      }
+    });
+  }
+
+  if (replayBtn) {
+    replayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetCardExperience();
+      closeEnvelope();
+    });
+  }
+}
+
+/* ============================================================
+   图片 / 打字机
+   ============================================================ */
 
 function initPhotoFallbacks() {
   document.querySelectorAll('.photo-frame img').forEach((img) => {
@@ -321,38 +442,6 @@ function initPhotoFallbacks() {
   });
 }
 
-function initRevealObserver() {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
-  );
-  document.querySelectorAll('.photo-card.reveal, .reveal:not(.photo-card)').forEach((el) => observer.observe(el));
-}
-
-function initTypewriterObserver() {
-  const letterSection = document.getElementById('letter');
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !typewriterStarted) {
-          typewriterStarted = true;
-          startTypewriter();
-          observer.unobserve(letterSection);
-        }
-      });
-    },
-    { threshold: 0.3 }
-  );
-  observer.observe(letterSection);
-}
-
 function startTypewriter() {
   const chars = [...CONFIG.blessingText];
   let index = 0;
@@ -364,9 +453,9 @@ function startTypewriter() {
       typewriterText.textContent += chars[index];
       index++;
       const delay = chars[index - 1] === '\n' ? CONFIG.typewriterSpeed * 3 : CONFIG.typewriterSpeed;
-      setTimeout(typeNext, delay);
+      typewriterTimer = setTimeout(typeNext, delay);
     } else {
-      setTimeout(() => typewriterCursor.classList.add('hidden'), 2000);
+      typewriterTimer = setTimeout(() => typewriterCursor.classList.add('hidden'), 2000);
     }
   }
   typeNext();
@@ -383,7 +472,9 @@ function openModal() {
 
 function closeModal() {
   modalOverlay.classList.remove('active');
-  document.body.style.overflow = '';
+  if (!document.body.classList.contains('envelope-open')) {
+    document.body.style.overflow = '';
+  }
   setTimeout(() => modalOverlay.setAttribute('hidden', ''), 450);
 }
 
@@ -717,8 +808,7 @@ function init() {
   initStars();
   initFloatingParticles();
   initPhotoFallbacks();
-  initRevealObserver();
-  initTypewriterObserver();
+  initEnvelope();
   initMusic();
   initGlobalFireworks();
 }
