@@ -13,8 +13,14 @@ const CONFIG = {
     '愿你新的18岁，有热爱，有自由，有坚定向前的勇气。\n\n' +
     '愿你所想皆如愿，所行皆坦途，还是最希望你开心。\n\n' +
     '生日快乐，恭喜你又到了新的18岁哦！',
-  /** 礼物弹窗图片：支持 .gif 动图 或 .jpg/.png 静态图，换图后请增大 ?v= */
-  giftImage: 'assets/gift-cat.jpg?v=1',
+  /** 礼物弹窗图片（可多张）：支持 .gif 动图 或 .jpg/.png；换图后请增大 ?v= */
+  giftImages: [
+    'assets/gift-cat1.jpg?v=2',
+    'assets/gift-cat2.jpg?v=2',
+    'assets/gift-cat3.jpg?v=2',
+    'assets/gift-cat4.jpg?v=2',
+    'assets/gift-cat5.jpg?v=2',
+  ],
   typewriterSpeed: 60,
   starCount: 50,
   particleCount: 12,
@@ -68,7 +74,7 @@ const stepNext = document.getElementById('stepNext');
 const giftBox = document.getElementById('giftBox');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
-const giftModalImage = document.getElementById('giftModalImage');
+const giftModalGallery = document.getElementById('giftModalGallery');
 const giftModalPlaceholder = document.getElementById('giftModalPlaceholder');
 const typewriterText = document.getElementById('typewriterText');
 const typewriterCursor = document.getElementById('typewriterCursor');
@@ -468,29 +474,60 @@ function startTypewriter() {
 /* ============================================================
    礼物盒与弹窗
    ============================================================ */
-function initGiftModalImage() {
-  if (!giftModalImage) return;
+function initGiftModalImages() {
+  if (!giftModalGallery || !Array.isArray(CONFIG.giftImages) || !CONFIG.giftImages.length) return;
 
-  giftModalImage.src = CONFIG.giftImage;
+  giftModalGallery.innerHTML = '';
+  let loadedCount = 0;
+  let errorCount = 0;
+  const total = CONFIG.giftImages.length;
 
-  const onLoad = () => {
-    giftModalImage.classList.add('loaded');
-    giftModalImage.classList.remove('error');
-    if (giftModalPlaceholder) giftModalPlaceholder.hidden = true;
+  const updatePlaceholder = () => {
+    if (!giftModalPlaceholder) return;
+    if (loadedCount === 0 && errorCount === total) {
+      giftModalPlaceholder.hidden = false;
+    } else {
+      giftModalPlaceholder.hidden = true;
+    }
   };
 
-  const onError = () => {
-    giftModalImage.classList.add('error');
-    giftModalImage.classList.remove('loaded');
-    if (giftModalPlaceholder) giftModalPlaceholder.hidden = false;
-    console.info('[生日贺卡] 礼物图片加载失败，请检查：', CONFIG.giftImage);
-  };
+  CONFIG.giftImages.forEach((src, index) => {
+    const item = document.createElement('figure');
+    item.className = 'modal-gift-item';
+    item.setAttribute('role', 'listitem');
+    item.style.setProperty('--gift-reveal-delay', (index * 0.08) + 's');
 
-  giftModalImage.addEventListener('load', onLoad);
-  giftModalImage.addEventListener('error', onError);
-  if (giftModalImage.complete) {
-    giftModalImage.naturalWidth > 0 ? onLoad() : onError();
-  }
+    const img = document.createElement('img');
+    img.className = 'modal-gift-image';
+    img.src = src;
+    img.alt = `小九举着生日蛋糕 ${index + 1}`;
+    img.loading = index < 2 ? 'eager' : 'lazy';
+
+    const onLoad = () => {
+      img.classList.add('loaded');
+      img.classList.remove('error');
+      loadedCount++;
+      updatePlaceholder();
+    };
+
+    const onError = () => {
+      img.classList.add('error');
+      img.classList.remove('loaded');
+      item.classList.add('modal-gift-item--error');
+      errorCount++;
+      updatePlaceholder();
+      console.info('[生日贺卡] 礼物图片加载失败：', src);
+    };
+
+    img.addEventListener('load', onLoad);
+    img.addEventListener('error', onError);
+    item.appendChild(img);
+    giftModalGallery.appendChild(item);
+
+    if (img.complete) {
+      img.naturalWidth > 0 ? onLoad() : onError();
+    }
+  });
 }
 
 function openModal() {
@@ -840,7 +877,7 @@ function init() {
   initStars();
   initFloatingParticles();
   initPhotoFallbacks();
-  initGiftModalImage();
+  initGiftModalImages();
   initEnvelope();
   initMusic();
   initGlobalFireworks();

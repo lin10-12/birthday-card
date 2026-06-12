@@ -186,20 +186,12 @@
     <div class="modal glass-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-gift-image-wrap">
         <span class="modal-gift-glow" aria-hidden="true"></span>
-        <figure class="modal-gift-figure">
-          <!-- 可替换：assets/gift-cat.gif 动图 或 gift-cat.jpg 静态图；换图后增大 ?v= -->
-          <img
-            id="giftModalImage"
-            class="modal-gift-image"
-            src="assets/gift-cat.jpg?v=1"
-            alt="小九举着生日蛋糕"
-            loading="eager"
-          >
-          <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
-            <span class="modal-gift-placeholder__emoji">🐱🎂</span>
-            <span class="modal-gift-placeholder__text">请将图片放入 assets/gift-cat.jpg</span>
-          </div>
-        </figure>
+        <!-- 图片由 script.js CONFIG.giftImages 动态生成；支持 .gif / .jpg -->
+        <div id="giftModalGallery" class="modal-gift-grid" role="list" aria-label="小九举蛋糕照片"></div>
+        <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
+          <span class="modal-gift-placeholder__emoji">🐱🎂</span>
+          <span class="modal-gift-placeholder__text">请将图片放入 assets/gift-cat1.jpg ~ gift-cat5.jpg</span>
+        </div>
       </div>
       <h3 id="modalTitle" class="modal-title">生日快乐！🎂</h3>
       <p class="modal-body">
