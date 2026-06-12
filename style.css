@@ -1082,6 +1082,7 @@ body.envelope-open #coverPage .cover-invite {
   background: linear-gradient(160deg, rgba(255, 252, 245, 0.92), rgba(255, 235, 225, 0.85));
   transform: scale(0.88) translateY(16px);
   opacity: 0;
+  overflow: visible;
   transition: transform 0.5s var(--transition-smooth), opacity 0.45s var(--transition-smooth);
 }
 
@@ -1092,6 +1093,7 @@ body.envelope-open #coverPage .cover-invite {
 
 .modal-gift-image-wrap {
   position: relative;
+  z-index: 2;
   width: 100%;
   margin: 0 auto 0.85rem;
 }
@@ -1105,35 +1107,80 @@ body.envelope-open #coverPage .cover-invite {
   pointer-events: none;
 }
 
-.modal-gift-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.45rem;
-  max-height: min(52dvh, 380px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0.15rem;
+.modal-gift-orbit {
+  position: relative;
+  width: 100%;
+  height: min(48dvh, 300px);
+  min-height: 268px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.modal-gift-orbit-track {
+  position: absolute;
+  inset: 0;
+  transform: rotate(0deg);
+}
+
+.modal-gift-orbit-track--spin {
+  animation: giftOrbitSpin 48s linear infinite;
+}
+
+.modal-gift-orbit-track--spin:has(.modal-gift-item--focused) {
+  animation-duration: 64s;
+}
+
+@keyframes giftOrbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .modal-gift-item {
-  position: relative;
-  margin: 0;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1.5px solid rgba(214, 154, 92, 0.34);
-  background: linear-gradient(145deg, rgba(255, 252, 245, 0.95), rgba(255, 228, 218, 0.75));
-  box-shadow: 0 6px 18px rgba(201, 121, 116, 0.16);
-  aspect-ratio: 1 / 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  z-index: 2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  opacity: 0;
+  transition: opacity 0.5s var(--transition-smooth) var(--gift-reveal-delay, 0s);
+}
+
+.modal-gift-item--ready {
+  opacity: 1;
 }
 
 .modal-gift-item--error {
   display: none;
 }
 
-.modal-gift-grid .modal-gift-item:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-  width: min(58%, 168px);
-  margin: 0 auto;
+.modal-gift-item-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1.5px solid rgba(214, 154, 92, 0.34);
+  background: linear-gradient(145deg, rgba(255, 252, 245, 0.95), rgba(255, 228, 218, 0.75));
+  box-shadow: 0 6px 18px rgba(201, 121, 116, 0.16);
+  animation: giftItemFloat 4.2s ease-in-out infinite;
+  animation-delay: calc(var(--orbit-index, 0) * -0.85s);
+  transition: transform 0.35s var(--transition-smooth), box-shadow 0.35s var(--transition-smooth), border-color 0.35s;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.modal-gift-item--focused {
+  z-index: 20;
 }
 
 .modal-gift-image {
@@ -1143,32 +1190,110 @@ body.envelope-open #coverPage .cover-invite {
   object-fit: cover;
   object-position: center;
   background: rgba(255, 245, 238, 0.55);
-  opacity: 0;
-  transform: scale(0.96);
-  transition: opacity 0.45s var(--transition-smooth), transform 0.5s var(--transition-smooth);
+  pointer-events: none;
+  user-select: none;
 }
 
 .modal-gift-image.error {
   display: none;
 }
 
-.modal-gift-image.loaded {
-  opacity: 1;
-  transform: scale(1);
+.modal-gift-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+  text-align: center;
 }
 
-.modal-overlay.active .modal-gift-image.loaded {
-  animation: giftImageReveal 0.5s var(--transition-smooth) var(--gift-reveal-delay, 0s) forwards;
-}
-
-@keyframes giftImageReveal {
-  0% { opacity: 0; transform: scale(0.92) translateY(8px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes giftImageFloat {
+@keyframes giftItemFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-5px); }
+}
+
+.modal-gift-item--focused .modal-gift-item-inner {
+  animation: giftItemFloatFocused 3.6s ease-in-out infinite;
+  border-color: rgba(241, 198, 122, 0.72);
+  box-shadow:
+    0 12px 28px rgba(201, 121, 116, 0.32),
+    0 0 0 3px rgba(241, 198, 122, 0.28);
+}
+
+@keyframes giftItemFloatFocused {
+  0%, 100% { transform: scale(1.16) translateY(-6px); }
+  50% { transform: scale(1.16) translateY(-11px); }
+}
+
+/* ---------- 礼物大图预览 ---------- */
+.gift-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgba(40, 24, 28, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.32s var(--transition-smooth), visibility 0.32s;
+}
+
+.gift-lightbox[hidden] { display: none; }
+.gift-lightbox:not([hidden]) { display: flex; }
+
+.gift-lightbox--active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.gift-lightbox-close {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gift-lightbox-image {
+  max-width: min(96vw, 520px);
+  max-height: min(82dvh, 720px);
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.38s var(--transition-smooth), opacity 0.32s;
+}
+
+.gift-lightbox--active .gift-lightbox-image {
+  transform: scale(1);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-gift-orbit-track--spin {
+    animation: none;
+  }
+
+  .modal-gift-item-inner {
+    animation: none;
+  }
+
+  .modal-gift-item--focused .modal-gift-item-inner {
+    animation: none;
+    transform: scale(1.12) translateY(-4px);
+  }
 }
 
 .modal-gift-placeholder {

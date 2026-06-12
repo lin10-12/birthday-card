@@ -187,7 +187,8 @@
       <div class="modal-gift-image-wrap">
         <span class="modal-gift-glow" aria-hidden="true"></span>
         <!-- 图片由 script.js CONFIG.giftImages 动态生成；支持 .gif / .jpg -->
-        <div id="giftModalGallery" class="modal-gift-grid" role="list" aria-label="小九举蛋糕照片"></div>
+        <div id="giftModalGallery" class="modal-gift-orbit" role="list" aria-label="小九举蛋糕照片"></div>
+        <p class="modal-gift-hint">单击置顶 · 双击看大图</p>
         <div id="giftModalPlaceholder" class="modal-gift-placeholder" hidden>
           <span class="modal-gift-placeholder__emoji">🐱🎂</span>
           <span class="modal-gift-placeholder__text">请将图片放入 assets/gift-cat1.jpg ~ gift-cat5.jpg</span>
@@ -202,6 +203,12 @@
         <span>收下祝福 ✨</span>
       </button>
     </div>
+  </div>
+
+  <!-- 礼物照片大图预览 -->
+  <div id="giftLightbox" class="gift-lightbox" hidden aria-hidden="true">
+    <button id="giftLightboxClose" class="gift-lightbox-close" type="button" aria-label="关闭大图">×</button>
+    <img id="giftLightboxImage" class="gift-lightbox-image" src="" alt="">
   </div>
 
   <script src="script.js"></script>

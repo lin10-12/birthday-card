@@ -21,6 +21,9 @@ const CONFIG = {
     'assets/gift-cat4.jpg?v=2',
     'assets/gift-cat5.jpg?v=2',
   ],
+  /** 礼物环绕轨道半径（px）与单张尺寸（px） */
+  giftOrbitRadius: 96,
+  giftItemSize: 74,
   typewriterSpeed: 60,
   starCount: 50,
   particleCount: 12,
@@ -76,6 +79,9 @@ const modalOverlay = document.getElementById('modalOverlay');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 const giftModalGallery = document.getElementById('giftModalGallery');
 const giftModalPlaceholder = document.getElementById('giftModalPlaceholder');
+const giftLightbox = document.getElementById('giftLightbox');
+const giftLightboxImage = document.getElementById('giftLightboxImage');
+const giftLightboxClose = document.getElementById('giftLightboxClose');
 const typewriterText = document.getElementById('typewriterText');
 const typewriterCursor = document.getElementById('typewriterCursor');
 const starfield = document.getElementById('starfield');
@@ -90,6 +96,7 @@ let typewriterStarted = false;
 let typewriterTimer = null;
 let currentStep = 0;
 const TOTAL_STEPS = 4;
+let focusedGiftIndex = -1;
 let fireworksAnimating = false;
 let sparks = [];
 let flashes = [];
@@ -474,40 +481,157 @@ function startTypewriter() {
 /* ============================================================
    礼物盒与弹窗
    ============================================================ */
+function focusGiftItem(index) {
+  focusedGiftIndex = index;
+  document.querySelectorAll('.modal-gift-item').forEach((el) => {
+    const i = Number(el.dataset.index);
+    el.classList.toggle('modal-gift-item--focused', i === index);
+  });
+}
+
+function applyGiftOrbitTransform(item, index, total) {
+  const angle = (360 / total) * index;
+  const radius = CONFIG.giftOrbitRadius;
+  item.style.transform =
+    `rotate(${angle}deg) translateX(${radius}px) rotate(${-angle}deg)`;
+}
+
+function restartGiftOrbitAnimation() {
+  const track = giftModalGallery?.querySelector('.modal-gift-orbit-track');
+  if (!track) return;
+  track.classList.remove('modal-gift-orbit-track--spin');
+  void track.offsetWidth;
+  track.classList.add('modal-gift-orbit-track--spin');
+}
+
+function openGiftLightbox(src, alt) {
+  if (!giftLightbox || !giftLightboxImage) return;
+  giftLightboxImage.src = src;
+  giftLightboxImage.alt = alt || '小九举着生日蛋糕';
+  giftLightbox.removeAttribute('hidden');
+  giftLightbox.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => giftLightbox.classList.add('gift-lightbox--active'));
+}
+
+function closeGiftLightbox() {
+  if (!giftLightbox) return;
+  giftLightbox.classList.remove('gift-lightbox--active');
+  giftLightbox.setAttribute('aria-hidden', 'true');
+  setTimeout(() => {
+    giftLightbox.setAttribute('hidden', '');
+    if (giftLightboxImage) giftLightboxImage.src = '';
+  }, 320);
+}
+
+function bindGiftItemInteraction(item, src, alt, index) {
+  let pendingTimer = null;
+  let lastPointerUp = 0;
+
+  const openLightbox = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    openGiftLightbox(src, alt);
+  };
+
+  const onPointerUp = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const now = Date.now();
+    const isDoubleTap = now - lastPointerUp > 0 && now - lastPointerUp < 380;
+    lastPointerUp = now;
+
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+
+    if (isDoubleTap) {
+      openLightbox(e);
+      return;
+    }
+
+    pendingTimer = setTimeout(() => {
+      focusGiftItem(index);
+      pendingTimer = null;
+    }, 300);
+  };
+
+  item.addEventListener('pointerup', onPointerUp);
+  item.addEventListener('dblclick', openLightbox);
+}
+
+function initGiftLightbox() {
+  if (giftLightboxClose) {
+    giftLightboxClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeGiftLightbox();
+    });
+  }
+  if (giftLightbox) {
+    giftLightbox.addEventListener('click', (e) => {
+      if (e.target === giftLightbox) closeGiftLightbox();
+    });
+  }
+}
+
 function initGiftModalImages() {
   if (!giftModalGallery || !Array.isArray(CONFIG.giftImages) || !CONFIG.giftImages.length) return;
 
   giftModalGallery.innerHTML = '';
+  const track = document.createElement('div');
+  track.className = 'modal-gift-orbit-track';
+
   let loadedCount = 0;
   let errorCount = 0;
   const total = CONFIG.giftImages.length;
 
   const updatePlaceholder = () => {
     if (!giftModalPlaceholder) return;
-    if (loadedCount === 0 && errorCount === total) {
-      giftModalPlaceholder.hidden = false;
-    } else {
-      giftModalPlaceholder.hidden = true;
-    }
+    giftModalPlaceholder.hidden = !(loadedCount === 0 && errorCount === total);
   };
 
+  const half = CONFIG.giftItemSize / 2;
+  giftModalGallery.style.setProperty('--gift-item-size', CONFIG.giftItemSize + 'px');
+
   CONFIG.giftImages.forEach((src, index) => {
-    const item = document.createElement('figure');
+    const item = document.createElement('button');
+    item.type = 'button';
     item.className = 'modal-gift-item';
     item.setAttribute('role', 'listitem');
-    item.style.setProperty('--gift-reveal-delay', (index * 0.08) + 's');
+    item.setAttribute('aria-label', `小九举着生日蛋糕 ${index + 1}`);
+    item.dataset.index = String(index);
+    item.style.setProperty('--gift-reveal-delay', (index * 0.1) + 's');
+    item.style.width = CONFIG.giftItemSize + 'px';
+    item.style.height = CONFIG.giftItemSize + 'px';
+    item.style.margin = `${-half}px 0 0 ${-half}px`;
+    applyGiftOrbitTransform(item, index, total);
+
+    const inner = document.createElement('span');
+    inner.className = 'modal-gift-item-inner';
+    inner.style.setProperty('--orbit-index', String(index));
 
     const img = document.createElement('img');
     img.className = 'modal-gift-image';
     img.src = src;
     img.alt = `小九举着生日蛋糕 ${index + 1}`;
-    img.loading = index < 2 ? 'eager' : 'lazy';
+    img.loading = 'eager';
+    img.draggable = false;
 
     const onLoad = () => {
       img.classList.add('loaded');
       img.classList.remove('error');
+      item.classList.add('modal-gift-item--ready');
       loadedCount++;
       updatePlaceholder();
+      if (loadedCount === 1 && focusedGiftIndex < 0) focusGiftItem(index);
     };
 
     const onError = () => {
@@ -521,22 +645,31 @@ function initGiftModalImages() {
 
     img.addEventListener('load', onLoad);
     img.addEventListener('error', onError);
-    item.appendChild(img);
-    giftModalGallery.appendChild(item);
+    inner.appendChild(img);
+    item.appendChild(inner);
+    track.appendChild(item);
+    bindGiftItemInteraction(item, src, img.alt, index);
 
     if (img.complete) {
       img.naturalWidth > 0 ? onLoad() : onError();
     }
   });
+
+  giftModalGallery.appendChild(track);
+  restartGiftOrbitAnimation();
 }
 
 function openModal() {
   modalOverlay.removeAttribute('hidden');
-  requestAnimationFrame(() => modalOverlay.classList.add('active'));
+  requestAnimationFrame(() => {
+    modalOverlay.classList.add('active');
+    restartGiftOrbitAnimation();
+  });
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
+  closeGiftLightbox();
   modalOverlay.classList.remove('active');
   if (!document.body.classList.contains('envelope-open')) {
     document.body.style.overflow = '';
@@ -878,6 +1011,7 @@ function init() {
   initFloatingParticles();
   initPhotoFallbacks();
   initGiftModalImages();
+  initGiftLightbox();
   initEnvelope();
   initMusic();
   initGlobalFireworks();
